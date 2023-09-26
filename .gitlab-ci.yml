@@ -1,0 +1,17 @@
+stages:
+  - linting
+
+linting:
+  stage: linting
+  image: python:3.10-slim
+
+  before_script:
+    - python3 --version
+    - pip --version
+    - pip install isort black
+
+  script:
+    - sleep 10
+    - isort . -l 120 --profile black --check-only
+    - black -l 120 --check .
+  when: manual
