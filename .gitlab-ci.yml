@@ -14,4 +14,4 @@ linting:
     - sleep 10
     - isort . -l 120 --profile black --check-only
     - black -l 120 --check .
-  when: manual
+  when: always
