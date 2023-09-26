@@ -10,7 +10,7 @@ def calculate_sum(a: int, b: int) -> int:
     return a + b
 
 
-@app.route('/')
+@app.route("/")
 async def hello(request):
     a = request.args.get("a")
     b = request.args.get("b")
