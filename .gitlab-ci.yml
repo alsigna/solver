@@ -40,24 +40,23 @@ build:
       --destination "${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}"
   when: manual
 
-.install_yc: &install_yc
-  script:
-    - apt update
-    - apt install -y curl jq
-    - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
-    - bash install.sh -i /usr/local/yandex-cloud -n
-    - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
-    - yc --version
-    - yc config set format json
-    - yc config set folder-id $CI_FOLDER_ID
-    - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
-    - yc config set service-account-key serverless-sa-key.json
+.install_yc: &install_yc |-
+  apt update
+  apt install -y curl jq
+  curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
+  bash install.sh -i /usr/local/yandex-cloud -n
+  ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
+  yc --version
+  yc config set format json
+  yc config set folder-id $CI_FOLDER_ID
+  echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
+  yc config set service-account-key serverless-sa-key.json
 
 create container:
   stage: deploy
   image: ubuntu:20.04
-  <<: *install_yc
   script:
+    - *install_yc
     # - apt update
     # - apt install -y curl jq
     # - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
