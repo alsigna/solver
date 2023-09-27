@@ -2,6 +2,7 @@ stages:
   - linting
   - build
   - deploy
+  - clearing
 
 linting:
   stage: linting
@@ -16,7 +17,7 @@ linting:
     - sleep 10
     - isort . -l 120 --profile black --check-only
     - black -l 120 --check .
-  when: manual
+  when: always
 
 build:
   stage: build
@@ -57,6 +58,7 @@ create container:
   image: ubuntu:20.04
   script:
     - *install_yc
+    - env
     - yc serverless container list
     - >-
       export CONTAINER_ID=$(yc serverless container list | 
@@ -70,8 +72,7 @@ create container:
       fi
     - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
     - echo "CONTAINER ID IS $CONTAINER_ID"
-  # when: always
-  when: manual
+  when: on_success
 
 create revision:
   stage: deploy
@@ -92,16 +93,50 @@ create revision:
     - >-
       yc serverless container revision deploy
       --container-name $CI_PROJECT_NAME
-      --image cr.yandex/crprt01pvhgjo2ah62me/alexigna/solver:fc48d4ff
+      --image ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}
       --cores 1
       --core-fraction 5
       --memory 128MB
       --service-account-id `echo $CI_SERVERLESS_SA_KEY | jq -r '.service_account_id'`
-  # when: on_success
-  when: always
+  when: on_success
 
+delete container:
+  stage: deploy
+  image: ubuntu:20.04
+  script:
+    - *install_yc
+    - yc serverless container list
+    - >-
+      export CONTAINER_ID=$(yc serverless container list | 
+      jq --arg CI_PROJECT_NAME "$CI_PROJECT_NAME" '.[] | select(.name==$CI_PROJECT_NAME) | .id')
+    - |-
+      if [[ $CONTAINER_ID == "" ]]; then
+        echo "CAN NOT FIND $CI_PROJECT_NAME CONTAINER"
+        exit 0
+      else
+        echo "CONTAINER $CI_PROJECT_NAME EXISTS"
+      fi
+    - yc serverless container delete --name solver
+  when: manual
 
-
+delete image:
+  stage: deploy
+  image: ubuntu:20.04
+  script:
+    - *install_yc
+    - echo $CI_REGISTRY_SA_KEY > registry-sa-key.json
+    - yc config set service-account-key registry-sa-key.json
+    - >-
+      export IMAGE_ID=$(yc container image list --repository-name ${CI_REGISTRY}/${CI_PROJECT_PATH}
+      | jq '.[] | select(.tags[]=="$CI_COMMIT_SHORT_SHA") | .id')
+    - |-
+      if [[ $IMAGE_ID == "" ]]; then
+        echo "CAN NOT FIND ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA} IMAGE"
+        exit 1
+      else
+        echo "CONTAINER $CI_PROJECT_NAME EXISTS"
+      fi
+  when: on_success
 # deploy-test-env-job:
 #   stage: release
 #   image: ubuntu:latest
