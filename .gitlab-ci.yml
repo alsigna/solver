@@ -40,9 +40,7 @@ build:
       --destination "${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}"
   when: manual
 
-create container:
-  stage: deploy
-  image: ubuntu:20.04
+.install_yc: &install_yc
   script:
     - apt update
     - apt install -y curl jq
@@ -54,6 +52,22 @@ create container:
     - yc config set folder-id $CI_FOLDER_ID
     - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
     - yc config set service-account-key serverless-sa-key.json
+
+create container:
+  stage: deploy
+  image: ubuntu:20.04
+  <<: *install_yc
+  script:
+    # - apt update
+    # - apt install -y curl jq
+    # - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
+    # - bash install.sh -i /usr/local/yandex-cloud -n
+    # - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
+    # - yc --version
+    # - yc config set format json
+    # - yc config set folder-id $CI_FOLDER_ID
+    # - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
+    # - yc config set service-account-key serverless-sa-key.json
     - yc serverless container list
     - >-
       export CONTAINER_ID=$(yc serverless container list | 
@@ -67,20 +81,47 @@ create container:
       fi
     - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
     - echo "CONTAINER ID IS $CONTAINER_ID"
+  when: always
 
+create revision:
+  stage: deploy
+  image: ubuntu:20.04
+  <<: *install_yc
+  script:
+    # - apt update
+    # - apt install -y curl jq
+    # - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
+    # - bash install.sh -i /usr/local/yandex-cloud -n
+    # - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
+    # - yc --version
+    # - yc config set format json
+    # - yc config set folder-id $CI_FOLDER_ID
+    # - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
+    # - yc config set service-account-key serverless-sa-key.json
+    - yc serverless container list
+    - >-
+      export CONTAINER_ID=$(yc serverless container list | 
+      jq --arg CI_PROJECT_NAME "$CI_PROJECT_NAME" '.[] | select(.name==$CI_PROJECT_NAME) | .id')
+    - |-
+      if [[ $CONTAINER_ID == "" ]]; then
+        echo "CAN NOT FIND $CI_PROJECT_NAME CONTAINER"
+        exit 1
+      else
+        echo "CONTAINER $CI_PROJECT_NAME EXISTS"
+      fi
+  when: on_success
 
 # deploy-test-env-job:
 #   stage: release
 #   image: ubuntu:latest
 #   script:
 #     - apt update
-#     - apt install -y curl jq 
+#     - apt install -y curl jq
 #     # - apk add yq --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 #     - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
 #     - bash install.sh -i /usr/local/yandex-cloud -n
 #     - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
 #     - yc --version
-
 
 #  # Аутентификация с помощью ключа сервисного аккаунта.
 #     - echo "$SA_TESTING_DEPLOYER_PRIVATE_KEY" > key.json
