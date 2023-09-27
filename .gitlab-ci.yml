@@ -55,6 +55,19 @@ create container:
     - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
     - yc config set service-account-key serverless-sa-key.json
     - yc serverless container list
+    - >-
+      export CONTAINER_ID=$(yc serverless container list | 
+      jq --arg CI_PROJECT_NAME "$CI_PROJECT_NAME" '.[] | select(.name==$CI_PROJECT_NAME) | .id')
+    - |-
+      if [[ $CONTAINER_ID == "" ]]; then
+        echo "CREATING NEW CONTAINER"
+        export CONTAINER_ID=$(yc serverless container create --name $CI_PROJECT_NAME | jq '.id')
+      else
+        echo "CONTAINER $CI_PROJECT_NAME ALREADY EXISTS"
+      fi
+    - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
+    - echo "CONTAINER ID IS $CONTAINER_ID"
+
 
 # deploy-test-env-job:
 #   stage: release
