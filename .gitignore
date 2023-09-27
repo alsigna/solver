@@ -7,6 +7,8 @@ __pycache__/
 
 note.txt
 authorized_key.json
+serverless-sa.json
+container-registry-sa.json
 
 # C extensions
 *.so

@@ -1,6 +1,7 @@
 stages:
   - linting
   - build
+  - deploy
 
 linting:
   stage: linting
@@ -23,22 +24,37 @@ build:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
   script:
-    - echo $CI_REGISTRY
-    - echo $CI_REGISTRY_KEY
+    - echo $CI_REGISTRY_ID
+    - echo $CI_REGISTRY_SA_KEY
     - echo $CI_PROJECT_DIR
     - echo $CI_PROJECT_PATH
     - echo $CI_COMMIT_SHORT_SHA
     - mkdir -p /kaniko/.docker
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n "json_key:${CI_REGISTRY_KEY}" | base64 | tr -d '\n' )\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"$CI_REGISTRY_ID\":{\"auth\":\"$(echo -n "json_key:${CI_REGISTRY_SA_KEY}" | base64 | tr -d '\n' )\"}}}" > /kaniko/.docker/config.json
     - cat /kaniko/.docker/config.json
     - env
     - >-
       /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/dockerfile"
-      --destination "${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}"
+      --destination "${CI_REGISTRY_ID}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}"
   when: manual
 
+create container:
+  stage: deploy
+  image: ubuntu:20.04
+  script:
+    - apt update
+    - apt install -y curl jq
+    - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
+    - bash install.sh -i /usr/local/yandex-cloud -n
+    - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
+    - yc --version
+    - yc config set format json
+    - yc config set folder-id $CI_FOLDER_ID
+    - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
+    - yc config set service-account-key serverless-sa-key.json
+    - yc serverless container list
 
 # deploy-test-env-job:
 #   stage: release
