@@ -57,16 +57,6 @@ create container:
   image: ubuntu:20.04
   script:
     - *install_yc
-    # - apt update
-    # - apt install -y curl jq
-    # - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
-    # - bash install.sh -i /usr/local/yandex-cloud -n
-    # - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
-    # - yc --version
-    # - yc config set format json
-    # - yc config set folder-id $CI_FOLDER_ID
-    # - echo $CI_SERVERLESS_SA_KEY > serverless-sa-key.json
-    # - yc config set service-account-key serverless-sa-key.json
     - yc serverless container list
     - >-
       export CONTAINER_ID=$(yc serverless container list | 
@@ -98,6 +88,14 @@ create revision:
       else
         echo "CONTAINER $CI_PROJECT_NAME EXISTS"
       fi
+    - >-
+      yc serverless container revision deploy
+      --container-name $CI_PROJECT_NAME
+      --image cr.yandex/crprt01pvhgjo2ah62me/alexigna/solver:d3374d30
+      --cores 1
+      --core-fraction 5
+      --memory 128MB
+      --service-account-id `echo $CI_SERVERLESS_SA_KEY | jq '.service_account_id'`
   when: on_success
 
 
