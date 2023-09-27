@@ -1,5 +1,5 @@
-from sanic.response import json
 from sanic import Sanic
+from sanic.response import json
 
 app = Sanic(__name__)
 
