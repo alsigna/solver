@@ -6,6 +6,8 @@ __pycache__/
 *.tmp
 
 note.txt
+authorized_key.json
+
 # C extensions
 *.so
 
