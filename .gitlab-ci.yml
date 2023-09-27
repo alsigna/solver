@@ -70,7 +70,8 @@ create container:
       fi
     - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
     - echo "CONTAINER ID IS $CONTAINER_ID"
-  when: always
+  # when: always
+  when: manual
 
 create revision:
   stage: deploy
@@ -91,12 +92,13 @@ create revision:
     - >-
       yc serverless container revision deploy
       --container-name $CI_PROJECT_NAME
-      --image cr.yandex/crprt01pvhgjo2ah62me/alexigna/solver:d3374d30
+      --image cr.yandex/crprt01pvhgjo2ah62me/alexigna/solver:fc48d4ff
       --cores 1
       --core-fraction 5
       --memory 128MB
-      --service-account-id `echo $CI_SERVERLESS_SA_KEY | jq '.service_account_id'`
-  when: on_success
+      --service-account-id `echo $CI_SERVERLESS_SA_KEY | jq -r '.service_account_id'`
+  # when: on_success
+  when: always
 
 
 
