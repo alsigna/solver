@@ -141,4 +141,6 @@ delete image:
       else
         echo "CONTAINER $CI_PROJECT_NAME EXISTS"
       fi
-  when: on_success
+  when: manual
+  needs:
+    - delete container
