@@ -72,7 +72,7 @@ create container:
       fi
     - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
     - echo "CONTAINER ID IS $CONTAINER_ID"
-  when: on_success
+  when: manual
   needs:
     - build and publish
 
@@ -100,7 +100,7 @@ create revision:
       --core-fraction 5
       --memory 128MB
       --service-account-id `echo $CI_SERVERLESS_SA_KEY | jq -r '.service_account_id'`
-  when: on_success
+  when: manual
   needs:
     - build and publish
 
@@ -133,7 +133,7 @@ delete image:
     - export REPOSITORY_NAME=`echo $CI_REGISTRY/$CI_PROJECT_PATH | sed s/"cr.yandex\/"//`
     - >-
       export IMAGE_ID=$(yc container image list --repository-name $REPOSITORY_NAME
-      | jq --arg CI_COMMIT_SHORT_SHA "$CI_COMMIT_SHORT_SHA" '.[] | select(.tags[]==$CI_COMMIT_SHORT_SHA) | .id')
+      | jq -r --arg CI_COMMIT_SHORT_SHA "$CI_COMMIT_SHORT_SHA" '.[] | select(.tags[]==$CI_COMMIT_SHORT_SHA) | .id')
     - |-
       if [[ $IMAGE_ID == "" ]]; then
         echo "CAN NOT FIND $REPOSITORY_NAME:$CI_COMMIT_SHORT_SHA IMAGE"
