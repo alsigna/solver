@@ -139,8 +139,9 @@ delete image:
         echo "CAN NOT FIND $REPOSITORY_NAME:$CI_COMMIT_SHORT_SHA IMAGE"
         exit 1
       else
-        echo "CONTAINER $CI_PROJECT_NAME EXISTS"
+        echo "IMAGE EXISTS WITH ID $IMAGE_ID"
       fi
+    - yc container image delete --id $IMAGE_ID
   when: manual
   needs:
     - delete container
