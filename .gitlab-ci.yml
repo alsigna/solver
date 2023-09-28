@@ -101,6 +101,8 @@ create revision:
       --memory 128MB
       --service-account-id `echo $CI_SERVERLESS_SA_KEY | jq -r '.service_account_id'`
   when: on_success
+  needs:
+    - build and publish
 
 delete container:
   stage: clearing
