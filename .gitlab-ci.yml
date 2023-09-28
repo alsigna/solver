@@ -19,7 +19,7 @@ linting:
     - black -l 120 --check .
   when: always
 
-build:
+build and publish:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:debug
@@ -73,7 +73,8 @@ create container:
     - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
     - echo "CONTAINER ID IS $CONTAINER_ID"
   when: on_success
-  after: build
+  needs:
+    - build and publish
 
 create revision:
   stage: deploy
