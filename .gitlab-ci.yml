@@ -36,9 +36,9 @@ build:
     - env
     - >-
       /kaniko/executor
-      --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/dockerfile"
-      --destination "${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}"
+      --context "$CI_PROJECT_DIR"
+      --dockerfile "$CI_PROJECT_DIR/dockerfile"
+      --destination "$CI_REGISTRY/$CI_PROJECT_PATH:$CI_COMMIT_SHORT_SHA"
   when: manual
 
 .install_yc: &install_yc
@@ -93,7 +93,7 @@ create revision:
     - >-
       yc serverless container revision deploy
       --container-name $CI_PROJECT_NAME
-      --image ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}
+      --image $CI_REGISTRY/$CI_PROJECT_PATH:$CI_COMMIT_SHORT_SHA
       --cores 1
       --core-fraction 5
       --memory 128MB
@@ -101,7 +101,7 @@ create revision:
   when: on_success
 
 delete container:
-  stage: deploy
+  stage: clearing
   image: ubuntu:20.04
   script:
     - *install_yc
@@ -120,50 +120,21 @@ delete container:
   when: manual
 
 delete image:
-  stage: deploy
+  stage: clearing
   image: ubuntu:20.04
   script:
     - *install_yc
     - echo $CI_REGISTRY_SA_KEY > registry-sa-key.json
     - yc config set service-account-key registry-sa-key.json
+    - export REPOSITORY_NAME=`echo $CI_REGISTRY/$CI_PROJECT_PATH | sed s/"cr.yandex\/"//`
     - >-
-      export IMAGE_ID=$(yc container image list --repository-name ${CI_REGISTRY}/${CI_PROJECT_PATH}
+      export IMAGE_ID=$(yc container image list --repository-name $REPOSITORY_NAME
       | jq '.[] | select(.tags[]=="$CI_COMMIT_SHORT_SHA") | .id')
     - |-
       if [[ $IMAGE_ID == "" ]]; then
-        echo "CAN NOT FIND ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA} IMAGE"
+        echo "CAN NOT FIND $REPOSITORY_NAME:$CI_COMMIT_SHORT_SHA IMAGE"
         exit 1
       else
         echo "CONTAINER $CI_PROJECT_NAME EXISTS"
       fi
   when: on_success
-# deploy-test-env-job:
-#   stage: release
-#   image: ubuntu:latest
-#   script:
-#     - apt update
-#     - apt install -y curl jq
-#     # - apk add yq --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
-#     - curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
-#     - bash install.sh -i /usr/local/yandex-cloud -n
-#     - ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
-#     - yc --version
-
-#  # Аутентификация с помощью ключа сервисного аккаунта.
-#     - echo "$SA_TESTING_DEPLOYER_PRIVATE_KEY" > key.json
-#     - yc config profile create sa-profile
-#     - yc config set service-account-key key.json
-# # Установка переменных для развертывания API Gateway и создание контейнера.
-#     - export sa_id=$TESTING_SA_ID
-#     - export container_id=$(yc serverless container create --name testing --cloud-id ${cloud_id} --folder-name ${cart_testing} | yq .id)
-# # Развертывание ревизии.
-#     - yc serverless container revision deploy --container-name testing --image "${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}" --cores 1 --memory 512mb --concurrency 1 --execution-timeout 10s --cloud-id ${cloud_id} --folder-name ${cart_testing} --service-account-id ${TESTING_SA_ID} --environment DOCAPI_ENDPOINT=${DOCAPI_ENDPOINT_testing},DB_TABLE_PREFIX='' --secret environment-variable=AWS_ACCESS_KEY_ID,name=cart-app,key=AWS_ACCESS_KEY_ID --secret environment-variable=AWS_SECRET_ACCESS_KEY,name=cart-app,key=AWS_SECRET_ACCESS_KEY --secret environment-variable=SECRET_KEY,name=cart-app,key=SECRET_KEY
-# # Настройка шаблона и развертывание API Gateway.
-#     - (cat ${CI_PROJECT_DIR}/apigw.yaml.j2 | envsubst) > apigw.yaml
-#     - cat apigw.yaml
-#     - yc serverless api-gateway create --name testing --spec=apigw.yaml --description "created from gitlab CI" --cloud-id ${cloud_id} --folder-name ${cart_testing}
-#     - mkdir output
-#     - export gwdomain=$(yc serverless api-gateway get testing --cloud-id ${cloud_id} --folder-name ${cart_testing} | yq .domain)
-#     - echo "https://"$gwdomain>output/gwurl
-#   artifacts:
-#     paths: [output/]
