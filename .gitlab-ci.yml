@@ -73,6 +73,7 @@ create container:
     - yc serverless container allow-unauthenticated-invoke --name $CI_PROJECT_NAME
     - echo "CONTAINER ID IS $CONTAINER_ID"
   when: on_success
+  after: build
 
 create revision:
   stage: deploy
