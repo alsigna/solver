@@ -1,0 +1,38 @@
+name: GitHub Actions
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Source Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python Environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Lint Checks
+        uses: ricardochaves/python-lint@v1.4.0
+        with:
+          use-pylint: false
+          use-pycodestyle: false
+          use-flake8: false
+          use-mypy: false
+          extra-black-options: "-l 120"
+          extra-isort-options: "-l 120 --profile black"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Test with pytest
+        run: python -m pytest
