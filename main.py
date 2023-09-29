@@ -19,7 +19,7 @@ async def hello(request):
     except:
         return json({"status": False, "result": "wrong request"})
     else:
-        return json({"status": True, "result": result})
+        return json({"status": True, "result": result, "msg": f"{a} + {b} = {result}"})
 
 
 if __name__ == "__main__":
