@@ -31,9 +31,6 @@ jobs:
           extra-black-options: "-l 120"
           extra-isort-options: "-l 120 --profile black"
 
-      - name: Disable warnings
-        run: export PYTHONWARNINGS="ignore"
-        
       - name: Install pytest
         run: pip install pytest
 
